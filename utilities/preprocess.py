@@ -86,3 +86,14 @@ def preprocess_extracted_emrs(entities_l: List[List[str]], pols_l: List[List[int
             X.append(pol_ent_text)
 
     return X
+
+def preprocess_patient_state_tuples(state_tuples_l: List[List[Tuple[str, int]]], label2token: Dict[int, str]):
+    text_l = list()
+    for state_tuples in state_tuples_l:
+        text = list()
+        for term, label in state_tuples:
+            labeltoken = label2token[label]
+            text += [labeltoken, term]
+        text = ' '.join(text)
+        text_l.append(text)
+    return text_l
