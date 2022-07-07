@@ -20,6 +20,7 @@ class ICDATrainer(object):
             # train_collate_fn: Callable,
             # valid_collate_fn: Callable,
             optimizer: torch.optim.Optimizer,
+            scheduler: torch.optim.lr_scheduler,
             eval_func: Callable,
             logger: logging.Logger,
             args: Namespace
@@ -31,6 +32,7 @@ class ICDATrainer(object):
         # self.train_collate_fn = train_collate_fn
         # self.valid_collate_fn = valid_collate_fn
         self.optimizer = optimizer
+        self.scheduler = scheduler
         self.eval_func = eval_func
         self.logger = logger
         self.args = args
@@ -92,12 +94,13 @@ class ICDATrainer(object):
                 if (loader_idx % self.args.grad_accum_steps == self.args.grad_accum_steps - 1) or (loader_idx == len(train_loader) - 1):
                     self.optimizer.step()
                     self.optimizer.zero_grad()
+                    self.scheduler.step()
                     # log training loss
                     train_losses.append(step_loss)
                     pbar.set_description(f"Step loss: {step_loss:.3f}") # terminal
                     with self.train_losses_path.open(mode="at") as f: # local file
                         f.write(f"{step},{step_loss}\n")
-                    self.wandb.log({"train_loss": step_loss}, step=step) # wandb
+                    self.wandb.log({"train_loss": step_loss, "lr": self.optimizer.param_groups[0]["lr"]}, step=step) # wandb
 
                     # evaluate during training
                     if (step % self.args.eval_every_k_steps == 0) or (loader_idx == len(train_loader) - 1):
