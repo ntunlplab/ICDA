@@ -87,13 +87,25 @@ def preprocess_extracted_emrs(entities_l: List[List[str]], pols_l: List[List[int
 
     return X
 
-def preprocess_patient_state_tuples(state_tuples_l: List[List[Tuple[str, int]]], label2token: Dict[int, str]):
+def preprocess_patient_state_tuples(state_tuples_l: List[List[Tuple[str, int]]], label2token: Dict[int, str]) -> List[str]:
     text_l = list()
     for state_tuples in state_tuples_l:
         text = list()
         for term, label in state_tuples:
             labeltoken = label2token[label]
             text += [labeltoken, term]
-        text = ' '.join(text)
+        text = ' '.join(text) if text else ''
         text_l.append(text)
     return text_l
+
+def augment_patient_states_with_partials(patient_states: List[List[Tuple[str, int]]], n_partials: int) -> List[List[Tuple[str, int]]]:
+    pa_patient_states = patient_states.copy() # patient states with partial augmentation (PA)
+    for partial_idx in range(1, n_partials):
+        prop = partial_idx / n_partials
+        for patient_state in patient_states:
+            end_entity_idx = math.floor(len(patient_state) * prop)
+            partial_state = patient_state[:end_entity_idx + 1]
+            pa_patient_states.append(partial_state)
+    
+    assert len(pa_patient_states) == len(patient_states) * n_partials
+    return pa_patient_states
