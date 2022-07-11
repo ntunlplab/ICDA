@@ -191,3 +191,6 @@ def evaluate_model_acc(data_loader, model, device):
     
     acc = total_correct / total_tokens
     return acc
+
+def build_reverse_dict(d: dict):
+    return {v: k for k, v in d.items()}
