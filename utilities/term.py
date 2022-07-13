@@ -1,4 +1,4 @@
-from typing import List, Set, Any
+from typing import Dict, List, Set, Any
 from tqdm import tqdm
 
 import pandas as pd
@@ -32,3 +32,18 @@ def build_fisher_matrix(co_matrix: pd.DataFrame, label2ndoc: dict, total_ndoc: i
             f_matrix.at[term, label] = p_value
 
     return f_matrix
+
+def build_term_ids_lists(score_matrix: pd.DataFrame, mode: str, threshold: float) -> Dict[Any, List[int]]:
+    if mode not in ["greater", "lesser"]:
+        raise ValueError("mode msut be 'lesser' or 'greater'")
+
+    term_ids_lists = dict()
+    for label in score_matrix.columns:
+        term_id2score = score_matrix.loc[:, label]
+        if mode == "lesser":
+            term_ids = term_id2score[term_id2score < threshold].sort_values(ascending=True).index.tolist()
+        else:
+            term_ids = term_id2score[term_id2score > threshold].sort_values(ascending=False).index.tolist()
+        term_ids_lists[label] = term_ids
+    
+    return term_ids_lists
