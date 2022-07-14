@@ -3,16 +3,14 @@ from typing import List, Union, Dict, Tuple
 from finding_extractor import FindingExtractor
 
 class EMRPreprocessor(object):
-    def __init__(self, finding_extractor: FindingExtractor, batch_size: int):
+    def __init__(self, finding_extractor: FindingExtractor):
         self.finding_extractor = finding_extractor
     
-    def preprocess(self, text_l: List[str]) -> List[str]:
+    def preprocess(self, text_l: List[str], mode: str) -> List[str]:
+        terms_l, pols_l = self.finding_extractor.extract(text_l, mode)
+        preprocessed_text_l = self.add_label_before_every_term(terms_l, pols_l)
 
-        return 
-    
-    def convert_to_state():
-
-        return
+        return preprocessed_text_l
     
     def add_label_before_every_term(self, terms_l: List[List[str]], labels_l: List[List[int]]):
         assert len(terms_l) == len(labels_l)
