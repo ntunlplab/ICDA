@@ -189,3 +189,13 @@ class FindingExtractor(object):
         ):
         self.recognizer = recognizer
         self.normalizer = normalizer
+    
+    def extract(self, text_l: List[str], mode: str) -> Tuple[List[List[str]], List[List[int]]]:
+        # recognize medical spans
+        span2pol_l = self.recognizer.extract_labeled_spans(text_l)
+        spans_l, pols_l = self.recognizer.extract_spans_and_pols(span2pol_l)
+
+        # normalize (or just lowercase) the terms
+        terms_l = self.normalizer.normalize_term_spans(text_l, spans_l, mode)
+        
+        return terms_l, pols_l 
