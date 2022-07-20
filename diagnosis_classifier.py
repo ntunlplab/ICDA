@@ -17,14 +17,16 @@ class DiagnosisClassifier(object):
             model: BertDxModel, 
             tokenizer: AutoTokenizer,
             id2dx: Dict[int, Any],
+            dx2name: Dict[str, str],
             batch_size: int,
             device: str,
             verbose: bool = False
         ):
         self.model = model
         self.tokenizer = tokenizer
-        self.id2dx = {int(k): v for k, v in id2dx.items()} # make sure that ids are integers
+        self.id2dx = {int(k): str(v) if len(str(v)) == 3 else '0' * (3 - len(str(v))) + str(v) for k, v in id2dx.items()} # make sure that ids are integers
         self.dx2id = {v: k for k, v in self.id2dx.items()}
+        self.dx2name = dx2name
         self.batch_size = batch_size
         self.device = device
         self.verbose = verbose
@@ -48,12 +50,13 @@ class DiagnosisClassifier(object):
     
     def get_top_dxs_with_probs(self, logits: torch.FloatTensor, top_k: int) -> Tuple:
         logits, preds = logits.sort(dim=-1, descending=True)
-        dxs = [list(map(lambda id_: self.id2dx[id_], pred)) for pred in preds[:, :top_k].tolist()]
-        probs = softmax(logits, dim=-1)[:, :top_k].tolist()
+        dxs_l = [list(map(lambda id_: self.id2dx[id_], pred)) for pred in preds[:, :top_k].tolist()]
+        probs_l = softmax(logits, dim=-1)[:, :top_k].tolist()
         
-        return dxs, probs
+        return dxs_l, probs_l
     
-    def calc_entropy(self, logits: torch.FloatTensor) -> torch.FloatTensor:
+    @staticmethod
+    def calc_entropy(logits: torch.FloatTensor) -> torch.FloatTensor:
         dist = Categorical(logits=logits)
         entropies = dist.entropy()
 
