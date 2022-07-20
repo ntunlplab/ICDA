@@ -6,3 +6,4 @@ models
 *.pickle
 *.pt
 *.pth
+wandb
