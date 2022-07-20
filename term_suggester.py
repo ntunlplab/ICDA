@@ -56,6 +56,7 @@ class TermSuggester(object):
             inequality: str, 
             threshold: float,
             diagnosis_classifier: DiagnosisClassifier,
+            umls_classifier: UMLSClassifier,
             top_k_dxs: int,
             term_lists_path: str = None
         ):
@@ -66,6 +67,7 @@ class TermSuggester(object):
         self.inequality = inequality
         self.threshold = threshold
         self.diagnosis_classifier = diagnosis_classifier
+        self.umls_classifier = umls_classifier
         self.top_k_dxs = top_k_dxs
         self.term_lists: Dict[Any, List[str]] = dict()
         if term_lists_path:
@@ -101,7 +103,7 @@ class TermSuggester(object):
         
         return list(candidates)
     
-    def suggest_terms_l(self, text_l: List[str], obs_terms_l: List[List[str]], dxs_l: List[List[Any]], probs_l: List[List[float]]) -> Dict[Any, List[str]]:
+    def suggest_terms_l(self, text_l: List[str], obs_terms_l: List[List[str]], dxs_l: List[List[Any]], probs_l: List[List[float]]) -> List[Dict[Any, List[str]]]:
         assert len(text_l) == len(obs_terms_l) == len(dxs_l)
         
         sug_terms_d_l = list()
@@ -151,3 +153,11 @@ class TermSuggester(object):
         term_entropy_ts = list(zip(dx_candidates, dx_entropies))
         ranked_terms, scores = zip(*sorted(term_entropy_ts, key=lambda t: t[1]))
         return ranked_terms, scores
+
+    def classify_sug_terms(self, sug_terms_l: List[Dict[Any, List[str]]]) -> List[Dict[Any, Dict[str, List[str]]]]:
+        dx2_ttype2terms_l = list()
+        for sug_terms in sug_terms_l:
+            dx2_ttype2terms = self.umls_classifier(sug_terms)
+            dx2_ttype2terms_l.append(dx2_ttype2terms)
+
+        return dx2_ttype2terms_l
