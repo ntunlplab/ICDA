@@ -14,10 +14,11 @@ def build_cooccurrence_matrix(entities_l: List[Set[str]], labels: List[Any], voc
 
     return pd.DataFrame(ndoc_dict)
 
-def build_fisher_matrix(co_matrix: pd.DataFrame, label2ndoc: dict, total_ndoc: int, min_ndoc: int) -> pd.DataFrame:
+def build_fisher_matrix(co_matrix: pd.DataFrame, label2ndoc: dict, total_ndoc: int, min_ndoc_k: int, min_ndoc_p: float) -> pd.DataFrame:
     f_matrix = co_matrix.copy()
     for label in tqdm(f_matrix.columns):
         label_ndoc = label2ndoc[label]
+        min_ndoc = max(min_ndoc_k, label_ndoc * min_ndoc_p)
         for term in f_matrix.index:
             term_ndoc = co_matrix.loc[term, :].sum()
             term_label_ndoc = co_matrix.at[term, label]
