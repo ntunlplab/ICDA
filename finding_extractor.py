@@ -93,15 +93,41 @@ class Recognizer(object):
         return term_spans
 
     @staticmethod
-    def extract_spans_and_pols(pol_spans_l: List[Dict[tuple, int]]):
+    def extract_spans_and_pols(span2pol_l: List[Dict[tuple, int]]):
         spans_l = list()
         pols_l = list()
-        for spans_pols in pol_spans_l:
+        for spans_pols in span2pol_l:
             spans = list(spans_pols.keys())
             pols = list(spans_pols.values())
             spans_l.append(spans)
             pols_l.append(pols)
         return spans_l, pols_l
+    
+    def get_polname2spans_l(self, span2pol_l: List[Dict[tuple, int]]) -> List[Dict[str, List[tuple]]]:
+        polname2spans_l = list()
+        for span2pol in span2pol_l:
+            polname2spans = {polname: list() for polname in self.label2token.values()}
+            for span, pol in span2pol.items():
+                polname = self.label2token[pol]
+                polname2spans[polname].append(span)
+            polname2spans_l.append(polname2spans)
+        
+        return polname2spans_l
+    
+    def get_polname2terms_l(self, terms_l: List[List[str]], pols_l: List[List[int]]) -> List[Dict[str, List[str]]]:
+        assert len(terms_l) == len(pols_l)
+
+        polname2terms_l = list()
+        for terms, pols in zip(terms_l, pols_l):
+            polname2terms = {polname: list() for polname in self.label2token.values()}
+            assert len(terms) == len(pols)
+
+            for term, pol in zip(terms, pols):
+                polname = self.label2token[pol]
+                polname2terms[polname].append(term)
+            polname2terms_l.append(polname2terms)
+
+        return polname2terms_l
 
 class Normalizer(object):
     def __init__(
