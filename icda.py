@@ -25,8 +25,6 @@ class ICDA(object):
 
         self.system_mode = system_mode
         self.extract_mode = extract_mode
-        # TODO: change this hard-coded version
-        self.n_dx = 5
         self.finding_extractor = finding_extractor
         self.diagnosis_classifier = diagnosis_classifier
         self.term_suggester = term_suggester
@@ -34,7 +32,7 @@ class ICDA(object):
         if self.system_mode != "deploy":
             self.state_tracker = state_tracker
 
-    def generate_support(self, emrs: List[str]) -> List[dict]:
+    def generate_support(self, emrs: List[str], n_dx: int = 5) -> List[dict]:
         # preprocess EMRs
         span2pol_l = self.finding_extractor.recognizer.extract_labeled_spans(emrs)
         spans_l, pols_l = self.finding_extractor.recognizer.extract_spans_and_pols(span2pol_l)
@@ -43,7 +41,7 @@ class ICDA(object):
 
         # predict top-k diagnoses
         all_logits = self.diagnosis_classifier.predict(text_l)
-        dxs_l, probs_l = self.diagnosis_classifier.get_top_dxs_with_probs(all_logits, top_k=self.n_dx) # get all sorted diagnoses
+        dxs_l, probs_l = self.diagnosis_classifier.get_top_dxs_with_probs(all_logits, top_k=n_dx) # get all sorted diagnoses
 
         # suggest terms
         sug_terms_l = self.term_suggester.suggest_terms_l(text_l, obs_terms_l=terms_l, dxs_l=dxs_l, probs_l=probs_l)
