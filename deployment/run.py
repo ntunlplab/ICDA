@@ -51,9 +51,9 @@ args = Namespace(
     valid_size=0.1,
     test_size=0.1,
 
-    system_mode="test",
+    system_mode="deploy",
     extract_mode="umls",
-    device="cuda:1"
+    device="cuda:0"
 )
 
 set_seeds(args.seed)
@@ -186,7 +186,6 @@ def index():
     support = icda.generate_support([emr], n_dx=n_icd)[0]
 
     # NOTE: refactor these
-    output["medical_text"] = support["emr_display"]["text"]
     output["pos_word"] = support["emr_display"]["extracted_terms"]["positive"]
     output["neg_word"] = support["emr_display"]["extracted_terms"]["negative"]
     output["icd"] = [f"{d['icd']} - {d['name']}" for d in support["diagnoses"]]
