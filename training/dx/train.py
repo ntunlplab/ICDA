@@ -32,6 +32,8 @@ def train(args: Namespace):
     args.exp_path = f"{args.save_dir}/{args.exp_name}"
     Path(args.exp_path).mkdir(parents=True, exist_ok=True)
 
+    label2token = {0: "positivie", 1: "negative"} if not args.ablation else {0: "", 1: ""}
+
     # save args
     (Path(args.exp_path) / "config.json").write_text(json.dumps(vars(args), indent=4))
     (Path(args.exp_path) / "args.pickle").write_bytes(pickle.dumps(args))
@@ -75,8 +77,9 @@ def train(args: Namespace):
 
     # preprocess input EMRs
     if args.input_type in ["unnorm", "norm"]:
-        train_X = preprocess_patient_state_tuples(state_tuples_l=train_X, label2token={0: "positive", 1: "negative"})
-        valid_X = preprocess_patient_state_tuples(state_tuples_l=valid_X, label2token={0: "positive", 1: "negative"})
+        # TODO: change label2token to loaded dict
+        train_X = preprocess_patient_state_tuples(state_tuples_l=train_X, label2token=label2token)
+        valid_X = preprocess_patient_state_tuples(state_tuples_l=valid_X, label2token=label2token)
 
     # build dataset instances
     tokenizer = AutoTokenizer.from_pretrained(encoder_names_mapping[args.tokenizer], use_fast=True)
