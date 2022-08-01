@@ -14,6 +14,7 @@ class ICDA(object):
             self,
             system_mode: str,
             extract_mode: str,
+            front_end: str,
             finding_extractor: FindingExtractor,
             diagnosis_classifier: DiagnosisClassifier,
             term_suggester: TermSuggester,
@@ -21,10 +22,13 @@ class ICDA(object):
             state_tracker: PatientStateTracker = None
         ):
         if system_mode not in ["train", "test", "deploy"]:
-            raise ValueError("mode should be 'train', 'test', or 'deploy'")
+            raise ValueError("system_mode should be 'train', 'test', or 'deploy'")
+        if front_end not in ["ss_dx", "unified"]:
+            raise ValueError("front_end should be 'ss_dx' or 'unified'")
 
         self.system_mode = system_mode
         self.extract_mode = extract_mode
+        self.front_end = front_end
         self.finding_extractor = finding_extractor
         self.diagnosis_classifier = diagnosis_classifier
         self.term_suggester = term_suggester
@@ -44,33 +48,37 @@ class ICDA(object):
         dxs_l, probs_l = self.diagnosis_classifier.get_top_dxs_with_probs(all_logits, top_k=n_dx) # get all sorted diagnoses
 
         # suggest terms
-        sug_terms_l = self.term_suggester.suggest_terms_l(text_l, obs_terms_l=terms_l, dxs_l=dxs_l, probs_l=probs_l)
+        sug_terms_d_l = self.term_suggester.suggest_terms_l(text_l, obs_terms_l=terms_l, dxs_l=dxs_l, probs_l=probs_l)
         
         # compile supports
         polname2spans_l = self.finding_extractor.recognizer.get_polname2spans_l(span2pol_l)
         polname2terms_l = self.finding_extractor.recognizer.get_polname2terms_l(terms_l, pols_l)
-        dx2_ttype2terms_l = self.term_suggester.classify_sug_terms(sug_terms_l)
-        assert len(emrs) == len(polname2spans_l) == len(dxs_l) == len(probs_l) == len(sug_terms_l)
+        if self.front_end == "ss_dx":
+            dx2_ttype2terms_l = self.term_suggester.classify_sug_terms(sug_terms_d_l)
+        assert len(emrs) == len(polname2spans_l) == len(dxs_l) == len(probs_l) == len(sug_terms_d_l)
         supports = [
             {
                 "emr_display": {
-                    "text": emr,
-                    "extracted_terms_offsets": polname2spans,
-                    "extracted_terms": polname2terms,
+                    "text": emrs[i],
+                    "extracted_terms_offsets": polname2spans_l[i],
+                    "extracted_terms": polname2terms_l[i],
                 },
                 "diagnoses": [
                     {"icd": dx, "name": self.diagnosis_classifier.dx2name[dx], "probability": prob}
-                    for dx, prob in zip(dxs, probs)
+                    for dx, prob in zip(dxs_l[i], probs_l[i])
                 ],
                 "suggested_terms": {
                     dx: {
                         "symptoms": ttype2terms.get("symptoms", []),
                         "diseases": ttype2terms.get("diseases", [])
                     }
-                    for dx, ttype2terms in dx2_ttype2terms.items()
+                    for dx, ttype2terms in dx2_ttype2terms_l[i].items()
+                } if (self.front_end == "ss_dx")
+                else {
+                    dx: sug_terms for dx, sug_terms in sug_terms_d_l[i].items()
                 }
             }
-            for emr, polname2spans, polname2terms, dxs, probs, dx2_ttype2terms in zip(emrs, polname2spans_l, polname2terms_l, dxs_l, probs_l, dx2_ttype2terms_l)
+            for i in range(len(emrs))
         ]
         # TODO: if capstone -> change schema
 
