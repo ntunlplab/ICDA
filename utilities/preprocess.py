@@ -1,6 +1,8 @@
 import math
 from typing import List, Any, Set, Tuple, Dict
 
+from sklearn.model_selection import train_test_split
+
 def select_labels_subset(inputs: List[Any], labels: List[Any], target_labels: Set[Any]) -> Tuple[list]:
     assert len(inputs) == len(labels)
 
@@ -109,3 +111,27 @@ def augment_patient_states_with_partials(patient_states: List[List[Tuple[str, in
     
     assert len(pa_patient_states) == len(patient_states) * n_partials
     return pa_patient_states
+
+def train_valid_test_split(inputs: list, labels: list, train_size: float, valid_size: float, test_size: float, seed: int):
+    assert len(inputs) == len(labels)
+    
+    train_inputs, eval_inputs, train_labels, eval_labels = train_test_split(
+        inputs,
+        labels,
+        train_size=train_size,
+        test_size=valid_size + test_size,
+        random_state=seed,
+        stratify=labels # NOTE: the values passed to 'stratify' will affect splitting results
+    )
+    valid_inputs, test_inputs, valid_labels, test_labels = train_test_split(
+        eval_inputs,
+        eval_labels,
+        train_size=valid_size / (valid_size + test_size),
+        test_size=test_size / (valid_size + test_size),
+        random_state=seed,
+        stratify=eval_labels
+    )
+    return train_inputs, valid_inputs, test_inputs, train_labels, valid_labels, test_labels
+
+def pad_int_icd(icd: int):
+    return str(icd) if len(str(icd)) == 3 else '0' * (3 - len(str(icd))) + str(icd)
