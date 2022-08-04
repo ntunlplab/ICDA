@@ -9,7 +9,7 @@ from transformers import BertModel, AutoModel
 
 class BertNERModelWithLoss(nn.Module):
     def __init__(self, encoder: str, num_tags: int):
-        super(BertNERModel, self).__init__()
+        super().__init__()
         # model
         self.bert = AutoModel.from_pretrained(encoder, local_files_only=True)
         self.embed_dim = self.bert.embeddings.word_embeddings.embedding_dim
