@@ -7,6 +7,24 @@ from torch.utils.data import DataLoader
 
 from transformers import BertModel, AutoModel
 
+class BertNERModelWithLoss(nn.Module):
+    def __init__(self, encoder: str, num_tags: int):
+        super(BertNERModel, self).__init__()
+        # model
+        self.bert = AutoModel.from_pretrained(encoder, local_files_only=True)
+        self.embed_dim = self.bert.embeddings.word_embeddings.embedding_dim
+        self.fc = nn.Linear(self.embed_dim, num_tags)
+        # loss function
+        self.criterion = nn.CrossEntropyLoss(reduction="mean", ignore_index=-100)
+    
+    def forward(self, x):
+        h_last = self.bert(**x).last_hidden_state
+        scores = self.fc(h_last)
+        return scores
+    
+    def calc_loss(self, scores, labels):
+        return self.criterion(scores.transpose(1, 2), labels)
+
 class BertNERModel(nn.Module):
     def __init__(self, encoder: str, num_tags: int):
         super(BertNERModel, self).__init__()
