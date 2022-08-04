@@ -1,0 +1,39 @@
+# file paths
+emrs_path: "../../datasets/notes_A.pickle"
+ner_spans_l_path: "../../datasets/ner_spans_l_with_pol_inferred.pickle"
+icds_path: "../../datasets/notes_A_icds.pickle"
+
+# fixed configs
+seed: 7
+model_max_length: 512
+
+# split
+train_size: 0.8
+valid_size: 0.1
+test_size: 0.1
+
+# hparams
+encoder: "BioLinkBERT"
+optimizer: "AdamW"
+scheduler: "linear"
+lr: !!float 5e-5
+warmup_ratio: 0.1
+nepochs: 10
+batch_size: 16
+
+# logging
+ckpt_steps: 100
+save_dir: "./models"
+hparams:
+  - encoder
+  - optimizer
+  - lr
+  - nepochs
+  - batch_size
+metrics:
+  - token_acc
+  - precision
+  - recall
+  - f1-score
+  - valid_loss
+target_metric: token_acc
