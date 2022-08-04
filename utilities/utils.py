@@ -1,5 +1,6 @@
 import sys
 import json
+import yaml
 import pickle
 import logging
 from typing import Any, Set, List, Dict
@@ -56,6 +57,9 @@ def load_jsonl(path: str) -> List[dict]:
             d = json.loads(line.rstrip())
             dict_l.append(d)
     return dict_l
+
+def load_yaml(path: str) -> dict:
+    return yaml.safe_load(Path(path).read_text())
 
 def load_pickle(path: str) -> Any:
     return pickle.loads(Path(path).read_bytes())
