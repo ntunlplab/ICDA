@@ -148,17 +148,17 @@ class BertNENDataset(Dataset):
     def __init__(
             self, 
             emrs: List[str], 
-            ner_spans_l: List[List[Tuple[int]]], 
+            nen_spans_l: List[List[Tuple[int]]], 
             mention2cui: Dict[str, str], 
             cui2name: Dict[str, str], 
             cui_batch_size: int,
             tokenizer: BertTokenizerFast
         ):
 
-        assert len(emrs) == len(ner_spans_l)
+        assert len(emrs) == len(nen_spans_l)
         # attributes
         self.emrs = emrs
-        self.ner_spans_l = ner_spans_l
+        self.nen_spans_l = nen_spans_l
         self.mention2cui = mention2cui
         self.cui2name = cui2name
         self.cuis = list(cui2name.keys())
@@ -170,20 +170,13 @@ class BertNENDataset(Dataset):
     
     def __getitem__(self, idx): # -> BE (EMR), token_indices_l (NER), CUIs (NEN), negative samples (NEN)
         emr = self.emrs[idx]
-        ner_spans = self.ner_spans_l[idx]
+        nen_spans = self.nen_spans_l[idx]
         # Filter ner_spans according to mention2cui & construct entity labels
-        mapped_ner_spans = list()
-        cuis = list()
-        for ner_span in ner_spans:
-            start, end = ner_span
-            emr_span = emr[start:end].lower().strip()
-            if emr_span in self.mention2cui:
-                mapped_ner_spans.append(ner_span)
-                cuis.append(self.mention2cui[emr_span])
+        spans, cuis = zip(*nen_spans) if nen_spans else ([], [])
 
         be = self.tokenizer(emr, truncation=True, return_offsets_mapping=True)
         offsets = be.pop("offset_mapping")
-        token_indices_l = self.spans_to_token_indices_l(mapped_ner_spans, offsets)
+        token_indices_l = self.spans_to_token_indices_l(spans, offsets)
         
         be = be.convert_to_tensors("pt", prepend_batch_axis=True)
         # Align token_indices_l & CUIs (remove empty list)
