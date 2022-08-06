@@ -1,0 +1,27 @@
+# corpus
+states_path: "../../datasets/notes_B_unnorm.json"
+labels_path: "../../datasets/out_icds.json"
+cui2name_path: "../../models/nen/smcui2name.json"
+input_type: "unnorm"
+
+# reproducibility
+seed: 7
+
+# split
+train_size: 0.8
+valid_size: 0.1
+test_size: 0.1
+
+# hparams
+mink: 0
+minp: 0.00
+alpha: 0.05
+
+# save path
+save_dir: "./fisher_matrices"
+hparams:
+  - input_type
+  - seed
+  - mink
+  - minp
+  - alpha
