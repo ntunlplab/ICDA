@@ -172,6 +172,8 @@ def evaluate_nen(data_loader: DataLoader, model: BiEncoder, args: Namespace, ent
         with torch.no_grad():
             # Encode mentions
             y_ments = model.encode_mentions(emr_be, mention_indices_l)
+            if y_ments == []:
+                continue
             assert len(y_ments) == len(mention_indices_l) == len(target_cuis)
 
             # Calculate scores
