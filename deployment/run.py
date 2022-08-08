@@ -53,6 +53,8 @@ args = Namespace(
 
     system_mode="deploy",
     extract_mode="umls",
+    front_end="unified",
+    build_folder="new_build",
     device="cuda:0"
 )
 
@@ -66,17 +68,17 @@ ner_model = BertNERModel(encoder=encoder_names_mapping["BioLinkBERT"], num_tags=
 ner_model.load_state_dict(torch.load(Path(args.ner_model_path) / "best_model.pth", map_location=args.device))
 ner_tokenizer = AutoTokenizer.from_pretrained(Path(args.ner_model_path) / "tokenizer", use_fast=True)
 
-nen_model = BiEncoder(encoder_name=encoder_names_mapping["BERT"])
-nen_model.load_state_dict(torch.load(Path(args.nen_model_path) / "best_model.pth", map_location=args.device))
+nen_model = BiEncoder(encoder_name=encoder_names_mapping["BioLinkBERT"])
+nen_model.load_state_dict(torch.load(Path(args.nen_model_path) / "best_valid_acc.pth", map_location=args.device))
 nen_tokenizer = AutoTokenizer.from_pretrained(Path(args.nen_model_path) / "tokenizer", use_fast=True)
-entity_embeddings = torch.load(Path(args.nen_model_path) / "entity_embeddings_5454.pt")
+entity_embeddings = torch.load(Path(args.nen_model_path) / "entity_embeddings.pt")
 
 cui2name = load_json(Path(args.nen_model_path) / "smcui2name.json")
 cui2typeinfo = load_json(Path(args.nen_model_path) / "smcui2typeinfo.json")
 cat2typenames = load_json(Path(args.nen_model_path) / "cat2typenames.json")
 
 id2dx = load_json(Path(args.dx_model_path) / "id2icd.json")
-dx2name = load_json(Path(args.dx_model_path) / "icdnine2name.json")
+dx2name = load_json(Path(args.dx_model_path) / "icdnine2name_en.json")
 dx_model = BertDxModel(encoder_name=encoder_names_mapping["BioLinkBERT"], num_dxs=len(id2dx))
 dx_model.load_state_dict(torch.load(Path(args.dx_model_path) / f"best_{args.target_metric}.pth"))
 dx_tokenizer = AutoTokenizer.from_pretrained(Path(args.ner_model_path) / "tokenizer", use_fast=True)
@@ -145,6 +147,7 @@ print("Modules loaded.")
 icda = ICDA(
     system_mode=args.system_mode,
     extract_mode=args.extract_mode,
+    front_end=args.front_end,
     finding_extractor=finding_extractor,
     diagnosis_classifier=dx_classifier,
     term_suggester=term_suggester,
@@ -156,7 +159,7 @@ print("ICDA initialized.")
 """
     Back-End Implementation
 """
-app = Flask(__name__, static_folder="build/static", template_folder="build")
+app = Flask(__name__, static_folder=f"{args.build_folder}/static", template_folder=args.build_folder)
 
 @app.route("/")
 def home():
@@ -165,12 +168,12 @@ def home():
 
 @app.route("/manifest.json")
 def manifest():
-    return send_from_directory('./build', 'manifest.json')
+    return send_from_directory(f'./{args.build_folder}', 'manifest.json')
 
 
 @app.route('/favicon.ico')
 def favicon():
-    return send_from_directory('./build', 'favicon.ico')
+    return send_from_directory(f'./{args.build_folder}', 'favicon.ico')
 
 @app.route("/post", methods=['GET'])
 def index():
@@ -180,7 +183,7 @@ def index():
     # Get front-end data
     emr = request.args.get('medicaltext')
     n_icd = int(request.args.get('n_icd'))
-    page = int(request.args.get('page'))
+    # page = int(request.args.get('page'))
 
     # Inference
     support = icda.generate_support([emr], n_dx=n_icd)[0]
@@ -195,6 +198,6 @@ def index():
             "dx": d["diseases"]
         }
         for d in support["suggested_terms"].values()
-    ]
+    ] if (icda.front_end == "ss_dx") else [terms for terms in support["suggested_terms"].values()]
 
     return output
