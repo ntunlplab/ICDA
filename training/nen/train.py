@@ -28,7 +28,7 @@ def main(args: Namespace) -> None:
     args.exp_dir = f"{args.save_dir}/{args.exp_name}"
 
     Path(args.exp_dir).mkdir(parents=True, exist_ok=True)
-    (Path(args.exp_dir) / "config_nen.yml").write_text(data=yaml.dump(data=yaml.dump(vars(args))))
+    (Path(args.exp_dir) / "config_nen.yml").write_text(data=yaml.dump(vars(args)))
 
     set_seeds(args.seed)
 
