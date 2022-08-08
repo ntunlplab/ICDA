@@ -1,0 +1,35 @@
+# file paths
+emrs_path: "../../datasets/notes_A.pickle"
+nen_spans_l_path: "../../datasets/nen_spans_l.pickle"
+icds_path: "../../datasets/notes_A_icds.pickle"
+sm2cui_path: "../../datasets/sm2cui.json"
+smcui2name_path: "../../datasets/smcui2name.json"
+
+# fixed configs
+seed: 7
+model_max_length: 512
+
+# split
+train_size: 0.8
+valid_size: 0.1
+test_size: 0.1
+
+# hparams
+encoder: "BioLinkBERT"
+optimizer: "AdamW"
+scheduler: "linear"
+lr: !!float 3e-5
+warmup_ratio: 0.067
+nepochs: 15
+batch_size: 16
+
+# logging
+ckpt_steps: 100000000
+save_dir: "./models"
+hparams:
+  - encoder
+  - optimizer
+  - scheduler
+  - lr
+  - nepochs
+  - batch_size
