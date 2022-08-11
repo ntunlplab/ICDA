@@ -132,7 +132,7 @@ def parse_args() -> Namespace:
         "--device",
         type=str,
         required=True,
-        help="The device for training the model."
+        help="The device for evaluating the model."
     )
 
     cmd_args = parser.parse_args()
