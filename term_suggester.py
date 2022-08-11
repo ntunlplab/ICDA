@@ -62,6 +62,7 @@ class TermSuggester(object):
         ):
         self.score_matrix = score_matrix
         self.id2term = id2term
+        self.term2id = {term: id_ for id_, term in self.id2term.items()}
         if inequality not in ["greater", "lesser"]:
             raise ValueError("inequality must be 'lesser' or 'greater'")
         self.inequality = inequality
@@ -94,16 +95,10 @@ class TermSuggester(object):
     def load_term_lists(self, term_lists_path: str):
         self.term_lists = load_json(term_lists_path)
     
-    def select_term_candidates(self, dxs: List[Any]) -> List[str]:
-        candidates = set()
-        for dx in dxs:
-            term_list = self.term_lists[str(dx)]
-            term_set = set(term_list)
-            candidates = candidates | term_set
-        
-        return list(candidates)
+    def select_term_candidates(self, dx: Any) -> List[str]:
+        return self.term_lists[str(dx)]
     
-    def suggest_terms_l(self, text_l: List[str], obs_terms_l: List[List[str]], dxs_l: List[List[Any]], probs_l: List[List[float]]) -> List[Dict[Any, List[str]]]:
+    def suggest_terms_l(self, text_l: List[str], obs_terms_l: List[List[str]], dxs_l: List[List[Any]], probs_l: List[List[float]], mode: str = "dynamic") -> List[Dict[Any, List[str]]]:
         assert len(text_l) == len(obs_terms_l) == len(dxs_l)
         
         sug_terms_d_l = list()
@@ -113,8 +108,11 @@ class TermSuggester(object):
             top_dxs = dxs[:self.top_k_dxs]
             top_probs = probs[:self.top_k_dxs]
             for dx, prob in zip(top_dxs, top_probs):
-                term_candidates = self.select_term_candidates([dx])
-                ranked_terms, scores = self.rank_terms(text, target_dx=dx, original_prob=prob, candidates=term_candidates)
+                term_candidates = self.select_term_candidates(dx)
+                if mode == "dynamic":
+                    ranked_terms, scores = self.rank_terms(text, target_dx=dx, original_prob=prob, candidates=term_candidates)
+                elif mode == "static":
+                    ranked_terms = term_candidates
                 sug_terms = list()
                 for ranked_term in ranked_terms:
                     if ranked_term not in obs_terms_s:
@@ -134,7 +132,7 @@ class TermSuggester(object):
 
         # calculate entropy for each text_w_term
         all_logits = self.diagnosis_classifier.predict(text_w_term_l)
-        entropies = self.diagnosis_classifier.calc_entropy(all_logits).tolist()
+        # entropies = self.diagnosis_classifier.calc_entropy(all_logits).tolist()
         
         # calculate new probabilities
         new_probs_l = torch.softmax(all_logits, dim=-1)
@@ -142,16 +140,16 @@ class TermSuggester(object):
         new_probs = new_probs_l[:, target_id].tolist()
 
         # filter candidates of which new probabilities are smaller than original probability
-        assert len(candidates) == len(entropies) == len(new_probs)
-        dx_candidates = list()
-        dx_entropies = list()
-        for cand, entropy, new_prob in zip(candidates, entropies, new_probs):
-            if new_prob > original_prob:
-                dx_candidates.append(cand)
-                dx_entropies.append(entropy)
+        assert len(candidates) == len(new_probs) # == len(entropies)
+        # dx_candidates = list()
+        # dx_entropies = list()
+        # for cand, entropy, new_prob in zip(candidates, entropies, new_probs):
+        #     if new_prob > original_prob:
+        #         dx_candidates.append(cand)
+        #         dx_entropies.append(entropy)
 
-        term_entropy_ts = list(zip(dx_candidates, dx_entropies))
-        ranked_terms, scores = zip(*sorted(term_entropy_ts, key=lambda t: t[1]))
+        term_score_ts = list(zip(candidates, new_probs))
+        ranked_terms, scores = zip(*sorted(term_score_ts, key=lambda t: t[1], reverse=True))
         return ranked_terms, scores
 
     def classify_sug_terms(self, sug_terms_l: List[Dict[Any, List[str]]]) -> List[Dict[Any, Dict[str, List[str]]]]:
