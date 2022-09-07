@@ -56,6 +56,24 @@ class BertDxModel(nn.Module):
     def calc_loss(self, scores, labels):
         return self.criterion(scores, labels)
 
+class CustomBertDxModel(nn.Module):
+    def __init__(self, bert, num_dxs):
+        super().__init__()
+        self.bert = bert
+        self.embed_dim = self.bert.embeddings.word_embeddings.embedding_dim
+        self.fc = nn.Linear(self.embed_dim, num_dxs)
+
+        self.criterion = nn.CrossEntropyLoss(reduction="mean")
+    
+    def forward(self, x):
+        h = self.bert(**x).last_hidden_state
+        cls_h = h[:, 0, :]
+        scores = self.fc(cls_h)
+        return scores
+    
+    def calc_loss(self, scores, labels):
+        return self.criterion(scores, labels)
+
 class BiEncoder(nn.Module):
     def __init__(self, encoder_name: str):
         super().__init__()
